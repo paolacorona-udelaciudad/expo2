@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Armemos el árbol</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700&family=Lato:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Pantalla para proyectar: frases a la izquierda; árbol con tres zonas (copa, tronco, raíces) a la derecha */
+  --fondo:#FFFFFF; --lila:#F3E4EF; --texto:#3A2140; --tenue:#7A6480;
+  --magenta:#B53D8E; --violeta:#7A2FA8; --ciruela:#3B1A63; --rosa:#E5B7D9;
+  --bien:#1F8A5B; --mal:#C2410C;
+  --display:"Baloo 2",system-ui,sans-serif; --cuerpo:"Lato",system-ui,sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--fondo);color:var(--texto);font-family:var(--cuerpo);display:flex;flex-direction:column}
+header{background:var(--magenta);color:#fff;padding:clamp(10px,1.6vh,18px) clamp(16px,3vw,40px);border-bottom-right-radius:28px;display:flex;justify-content:space-between;align-items:baseline;gap:16px;flex-wrap:wrap}
+header h1{font-family:var(--display);font-weight:700;font-size:clamp(20px,2.4vw,36px);margin:0;line-height:1.1}
+header p{margin:0;font-size:clamp(14px,1.4vw,21px)}
+main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(220px,28%) 1fr;gap:clamp(12px,2vw,32px);padding:clamp(12px,2vw,28px) clamp(16px,3vw,40px) clamp(8px,1vw,12px)}
+.bandeja{display:flex;flex-direction:column;gap:clamp(10px,1.4vh,18px);min-height:0;border-radius:20px;padding:4px}
+.bandeja.sobre{background:var(--lila)}
+.bandeja h2{font-family:var(--display);font-size:clamp(16px,1.5vw,24px);margin:0;color:var(--tenue);font-weight:600}
+.frase{touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;background:#fff;border:3px solid var(--magenta);border-radius:16px;padding:clamp(10px,1.2vw,18px);box-shadow:0 3px 0 var(--rosa)}
+.frase p{margin:0}
+.frase .txt{font-style:italic;font-size:clamp(15px,1.45vw,26px);line-height:1.25}
+.frase .res{display:none;margin-top:6px;font-weight:700;font-size:clamp(12px,1.05vw,17px)}
+.frase.levantada{opacity:.3}
+.frase.elegida{outline:4px solid var(--violeta);outline-offset:3px}
+.frase:focus-visible{outline:4px solid var(--ciruela);outline-offset:3px}
+.zona-drop .frase{border-width:2px;box-shadow:none;padding:clamp(6px,.7vw,12px) clamp(8px,.9vw,14px)}
+.zona-drop .frase .txt{font-size:clamp(12px,1.05vw,19px)}
+.frase.ok{border-color:var(--bien);background:#EAF6F0}
+.frase.no{border-color:var(--mal);background:#FDF0E9}
+.frase.ok .res{display:block;color:var(--bien)}
+.frase.no .res{display:block;color:var(--mal)}
+.fantasma{position:fixed;z-index:10;pointer-events:none;transform:rotate(-2deg);box-shadow:0 12px 28px rgba(59,26,99,.25);opacity:.95;margin:0}
+.escena{min-height:0;min-width:0;container-type:size;display:flex;align-items:center;justify-content:center}
+.lienzo{position:relative;width:min(100cqw,calc(100cqh * 960 / 560));aspect-ratio:960/560}
+.lienzo svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.zona-drop{position:absolute;left:52%;width:48%;border:3px dashed var(--c);border-radius:18px;background:color-mix(in srgb,var(--c) 6%,white);padding:clamp(14px,1.6vw,22px) clamp(8px,.9vw,14px) clamp(8px,.9vw,14px);display:flex;flex-direction:column;gap:6px;cursor:pointer;overflow:visible}
+.zona-drop.sobre{background:color-mix(in srgb,var(--c) 18%,white);border-style:solid}
+.zona-drop:focus-visible{outline:4px solid var(--ciruela);outline-offset:3px}
+.zona-drop .cab{position:absolute;top:0;left:14px;transform:translateY(-58%);background:var(--fondo);padding:0 8px;display:flex;align-items:baseline;gap:10px;white-space:nowrap}
+.zona-drop .parte{font-family:var(--display);font-weight:700;font-size:clamp(16px,1.6vw,28px);color:var(--c);line-height:1}
+.zona-drop .verbo{font-size:clamp(12px,1.05vw,17px);color:var(--tenue)}
+.zona-drop .lista{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,170px),1fr));gap:6px;align-items:start}
+#z-copa{top:4%;height:29%;--c:var(--violeta)}
+#z-tronco{top:37%;height:29%;--c:var(--magenta)}
+#z-raices{top:70%;height:29%;--c:var(--ciruela)}
+footer{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:0 clamp(16px,3vw,40px) clamp(12px,2vh,20px)}
+.acciones{display:flex;gap:10px;flex-wrap:wrap}
+.btn{font-family:var(--cuerpo);font-weight:700;font-size:clamp(14px,1.3vw,20px);border-radius:999px;padding:10px 22px;cursor:pointer;border:2px solid var(--magenta);background:#fff;color:var(--magenta);text-decoration:none}
+.btn.lleno{background:var(--magenta);color:#fff}
+.btn:focus-visible{outline:3px solid var(--ciruela);outline-offset:3px}
+.btn[disabled]{opacity:.4;cursor:default}
+.estado{margin:0;font-size:clamp(13px,1.2vw,19px);color:var(--tenue)}
+.vuela{animation:viento 6s linear infinite}
+@keyframes viento{0%{transform:translate(0,0) rotate(0);opacity:0}12%{opacity:1}100%{transform:translate(var(--dx,150px),var(--dy,38px)) rotate(160deg);opacity:0}}
+.raiz{stroke-dasharray:1 2;stroke-dashoffset:0;animation:crecer 1.8s ease-out both}
+@keyframes crecer{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+@media (prefers-reduced-motion:reduce){.vuela,.raiz{animation:none}}
+@media (max-width:760px){
+  html,body{height:auto}
+  main{grid-template-columns:1fr}
+  .escena{height:70vh}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Armemos el árbol</h1>
+  <p>¿Dónde va cada frase: raíces, tronco o copa?</p>
+</header>
+<main>
+  <section class="bandeja" id="bandeja" aria-label="Frases para ubicar">
+    <h2>Arrastrá cada frase al árbol</h2>
+  </section>
+  <div class="escena">
+    <div class="lienzo" id="lienzo">
+      <svg viewBox="0 0 960 560" aria-hidden="true">
+        <g stroke="#E5B7D9" stroke-width="2" stroke-dasharray="4 6" fill="none">
+          <path d="M372 110 C430 100 460 96 499 96"/>
+          <path d="M272 288 C380 288 440 283 499 283"/>
+          <path d="M330 440 C410 452 450 465 499 465"/>
+        </g>
+        <line x1="110" y1="336" x2="390" y2="336" stroke="#E5B7D9" stroke-width="3" stroke-linecap="round"/>
+        <g fill="none" stroke="#B53D8E" stroke-width="5" stroke-linecap="round" id="ramas"></g>
+        <g id="hojas"></g>
+        <g id="volando"></g>
+        <path d="M230 336 C240 302 243 272 245 240 L255 240 C257 272 260 302 270 336 Z" fill="#B53D8E"/>
+        <g fill="none" stroke="#3B1A63" stroke-linecap="round">
+          <path class="raiz" pathLength="1" d="M247 338 C228 362 182 382 134 440" stroke-width="4"/>
+          <path class="raiz" pathLength="1" d="M253 338 C272 362 318 382 366 440" stroke-width="4"/>
+          <path class="raiz" pathLength="1" d="M249 338 C240 384 216 432 196 500" stroke-width="3.5"/>
+          <path class="raiz" pathLength="1" d="M251 338 C260 384 284 432 304 500" stroke-width="3.5"/>
+          <path class="raiz" pathLength="1" d="M250 338 C250 400 250 452 250 522" stroke-width="3.5"/>
+          <path class="raiz" pathLength="1" d="M182 390 C168 418 162 444 160 470" stroke-width="2"/>
+          <path class="raiz" pathLength="1" d="M318 390 C332 418 338 444 340 470" stroke-width="2"/>
+          <path class="raiz" pathLength="1" d="M224 430 C218 456 222 480 226 500" stroke-width="2"/>
+          <path class="raiz" pathLength="1" d="M276 430 C282 456 278 480 274 500" stroke-width="2"/>
+          <path class="raiz" pathLength="1" d="M156 414 C140 424 128 440 120 462" stroke-width="1.6"/>
+          <path class="raiz" pathLength="1" d="M344 414 C360 424 372 440 380 462" stroke-width="1.6"/>
+          <path class="raiz" pathLength="1" d="M208 462 C196 478 186 494 182 516" stroke-width="1.6"/>
+          <path class="raiz" pathLength="1" d="M292 462 C304 478 314 494 318 516" stroke-width="1.6"/>
+          <path class="raiz" pathLength="1" d="M250 440 C242 462 238 484 240 506" stroke-width="1.6"/>
+          <path class="raiz" pathLength="1" d="M250 470 C258 488 262 506 260 528" stroke-width="1.6"/>
+          <path class="raiz" pathLength="1" d="M200 372 C186 386 176 402 172 420" stroke-width="1.6"/>
+          <path class="raiz" pathLength="1" d="M300 372 C314 386 324 402 328 420" stroke-width="1.6"/>
+        </g>
+      </svg>
+      <div class="zona-drop" id="z-copa" data-z="copa" tabindex="0" role="button" aria-label="Copa: integrar y crear, Formación Profesional">
+        <div class="cab"><span class="parte">Copa</span><span class="verbo">Integrar y crear · Formación Profesional</span></div>
+        <div class="lista"></div>
+      </div>
+      <div class="zona-drop" id="z-tronco" data-z="tronco" tabindex="0" role="button" aria-label="Tronco: especializarse, Formación Específica">
+        <div class="cab"><span class="parte">Tronco</span><span class="verbo">Especializarse · Formación Específica</span></div>
+        <div class="lista"></div>
+      </div>
+      <div class="zona-drop" id="z-raices" data-z="raices" tabindex="0" role="button" aria-label="Raíces: fundamentar, Formación General">
+        <div class="cab"><span class="parte">Raíces</span><span class="verbo">Fundamentar · Formación General</span></div>
+        <div class="lista"></div>
+      </div>
+    </div>
+  </div>
+</main>
+<footer>
+  <p class="estado" id="estado" aria-live="polite">Ubicadas: 0 de 3</p>
+  <div class="acciones">
+    <button type="button" class="btn lleno" id="comprobar" disabled>Comprobar</button>
+    <button type="button" class="btn" id="reiniciar">Reiniciar</button>
+    <a class="btn" href="https://claude.ai/artifact/1A3yp6neqEgn2e4aXdDGw6">Profundizar en el árbol de la carrera</a>
+  </div>
+</footer>
+<script>
+const PARTE={raices:"Raíces · Formación General",tronco:"Tronco · Formación Específica",copa:"Copa · Formación Profesional"};
+const FRASES=[
+ {id:"f1",q:"El equipo docente como comunidad de aprendizaje",z:"tronco",eje:"Liderazgo y desarrollo profesional"},
+ {id:"f2",q:"diseñar propuestas de mejora para instituciones, sistemas o políticas educativas",z:"copa",eje:"Propuestas de mejora"},
+ {id:"f3",q:"Las culturas institucionales",z:"raices",eje:"Instituciones y culturas institucionales"}
+];
+const $=id=>document.getElementById(id);
+const bandeja=$("bandeja"),zonas=[...document.querySelectorAll(".zona-drop")];
+let elegida=null;
+
+function crearFrases(){
+  document.querySelectorAll(".frase").forEach(f=>f.remove());
+  FRASES.forEach(F=>{
+    const d=document.createElement("div");d.className="frase";d.id=F.id;d.tabIndex=0;d.setAttribute("role","button");
+    d.setAttribute("aria-label","Frase: "+F.q+". Elegila y después elegí una parte del árbol.");
+    const t=document.createElement("p");t.className="txt";t.textContent="“"+F.q+"”";
+    const r=document.createElement("p");r.className="res";
+    d.append(t,r);bandeja.append(d);activar(d);
+  });
+  actualizar();
+}
+function limpiarMarcas(){document.querySelectorAll(".frase").forEach(f=>{f.classList.remove("ok","no");f.querySelector(".res").textContent=""})}
+function ubicar(card,destino){
+  const lista=destino===bandeja?bandeja:destino.querySelector(".lista");
+  lista.append(card);limpiarMarcas();actualizar();
+}
+function actualizar(){
+  const n=document.querySelectorAll(".zona-drop .frase").length;
+  $("estado").textContent="Ubicadas: "+n+" de "+FRASES.length;
+  $("comprobar").disabled=n===0;
+}
+function elegir(card){
+  if(elegida)elegida.classList.remove("elegida");
+  elegida=(elegida===card)?null:card;
+  if(elegida)elegida.classList.add("elegida");
+}
+function zonaBajo(x,y){
+  const el=document.elementFromPoint(x,y);if(!el)return null;
+  return el.closest(".zona-drop")||el.closest(".bandeja");
+}
+function activar(card){
+  card.addEventListener("pointerdown",ev=>{
+    if(ev.button!==0)return;
+    ev.preventDefault();
+    const r=card.getBoundingClientRect(),ox=ev.clientX-r.left,oy=ev.clientY-r.top,x0=ev.clientX,y0=ev.clientY;
+    let fantasma=null,sobre=null;
+    card.setPointerCapture(ev.pointerId);
+    const mover=e=>{
+      if(!fantasma){
+        if(Math.hypot(e.clientX-x0,e.clientY-y0)<6)return;
+        fantasma=card.cloneNode(true);fantasma.removeAttribute("id");fantasma.classList.add("fantasma");fantasma.classList.remove("elegida");
+        fantasma.style.width=Math.min(r.width,360)+"px";document.body.append(fantasma);card.classList.add("levantada");
+      }
+      fantasma.style.left=(e.clientX-Math.min(ox,340))+"px";fantasma.style.top=(e.clientY-oy)+"px";
+      const z=zonaBajo(e.clientX,e.clientY);
+      if(z!==sobre){if(sobre)sobre.classList.remove("sobre");sobre=z;if(sobre)sobre.classList.add("sobre")}
+    };
+    const soltar=e=>{
+      card.removeEventListener("pointermove",mover);card.removeEventListener("pointerup",soltar);card.removeEventListener("pointercancel",soltar);
+      if(sobre)sobre.classList.remove("sobre");
+      if(!fantasma){elegir(card);return}
+      fantasma.remove();card.classList.remove("levantada");
+      if(sobre){if(elegida){elegida.classList.remove("elegida");elegida=null}ubicar(card,sobre)}
+    };
+    card.addEventListener("pointermove",mover);card.addEventListener("pointerup",soltar);card.addEventListener("pointercancel",soltar);
+  });
+  card.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();elegir(card)}});
+}
+[...zonas,bandeja].forEach(z=>{
+  const poner=e=>{if(!elegida)return;if(e.target.closest(".frase")&&e.target.closest(".frase")!==elegida&&z!==bandeja)return;
+    const c=elegida;c.classList.remove("elegida");elegida=null;ubicar(c,z);c.focus()};
+  z.addEventListener("click",e=>{if(e.target.closest(".frase"))return;poner(e)});
+  if(z!==bandeja)z.addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target===z){e.preventDefault();poner(e)}});
+});
+$("comprobar").addEventListener("click",()=>{
+  let bien=0,total=0;
+  document.querySelectorAll(".zona-drop").forEach(z=>{
+    z.querySelectorAll(".frase").forEach(c=>{
+      total++;const F=FRASES.find(f=>f.id===c.id),ok=F.z===z.dataset.z;if(ok)bien++;
+      c.classList.remove("ok","no");c.classList.add(ok?"ok":"no");
+      c.querySelector(".res").textContent=ok?"✓ "+F.eje:"✗ Va en: "+PARTE[F.z].split(" · ")[0];
+    });
+  });
+  const faltan=FRASES.length-total;
+  $("estado").textContent="Bien ubicadas: "+bien+" de "+total+(faltan?" · faltan "+faltan:"");
+});
+$("reiniciar").addEventListener("click",()=>{elegida=null;crearFrases()});
+
+/* Hojas de la copa, como en El árbol de la carrera */
+(function(){
+  const NS="http://www.w3.org/2000/svg",COL=["#B53D8E","#7A2FA8","#C870AB","#E5B7D9","#9A4FC4"];
+  let s=7;const r=()=>{s=(s*16807)%2147483647;return s/2147483647};
+  const hoja=(x,y,rot,esc,col,cls)=>{
+    const g=document.createElementNS(NS,"g");g.setAttribute("transform","translate("+x+" "+y+")");
+    const p=document.createElementNS(NS,"path");
+    p.setAttribute("d","M0 0 C6 -10 18 -10 26 0 C18 10 6 10 0 0Z");
+    p.setAttribute("fill",col);p.setAttribute("transform","rotate("+rot+") scale("+esc+")");
+    if(cls){const w=document.createElementNS(NS,"g");w.setAttribute("class",cls);w.style.animationDelay=(r()*6).toFixed(1)+"s";w.append(p);g.append(w)}else g.append(p);
+    return g;
+  };
+  const H=$("hojas"),R=$("ramas"),CX=250,CY=168;
+  const pt=(ang,rad)=>[CX+Math.cos(ang*Math.PI/180)*rad,CY+Math.sin(ang*Math.PI/180)*rad];
+  [-150,-120,-90,-60,-30].forEach(a=>{const q=pt(a,68),l=document.createElementNS(NS,"path");
+    l.setAttribute("d","M250 244 Q250 "+(CY+40)+" "+q[0].toFixed(1)+" "+q[1].toFixed(1));R.append(l)});
+  for(let i=0;i<11;i++){const a=-205+i*23,q=pt(a,70);H.append(hoja(q[0],q[1],a,2.7,COL[i%3]))}
+  for(let i=0;i<6;i++){const a=-170+i*32,q=pt(a,14);H.append(hoja(q[0],q[1],a,2.1,COL[(i+1)%3]))}
+  const V=$("volando");
+  [-165,-135,-105,-75,-45,-120,-60].forEach((a,i)=>{
+    const q=pt(a,118),h=hoja(q[0],q[1],a,0.9+r()*0.4,COL[i%3],"vuela"),w=h.firstChild;
+    w.style.setProperty("--dx",(Math.cos(a*Math.PI/180)*95+25).toFixed(0)+"px");
+    w.style.setProperty("--dy",(Math.sin(a*Math.PI/180)*80+22).toFixed(0)+"px");
+    V.append(h)});
+})();
+crearFrases();
+</script>
+</body>
+</html>
